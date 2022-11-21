@@ -15,7 +15,7 @@ module.exports = {
             let exercise = {
                 ...req.body,
                 userId: userId,
-                date,
+                date: date,
             };
 
             const newExercise = new Excercise(exercise)
@@ -26,12 +26,21 @@ module.exports = {
             let { _id, username } = user._doc;
 
 
-            return res.json({
-                _id,
+            console.log({
+                // ...lastExcercise._doc,
+                _id: userId,
                 username,
-                "date": lastExcercise._doc.date.toDateString(),
                 "duration": lastExcercise._doc.duration,
                 "description": lastExcercise._doc.description,
+                "date": lastExcercise._doc.date.toDateString(),
+            })
+            return res.json({
+                // ...lastExcercise._doc,
+                _id: userId,
+                username,
+                "duration": lastExcercise._doc.duration,
+                "description": lastExcercise._doc.description,
+                "date": lastExcercise._doc.date.toDateString(),
             });
         } catch (error) {
             next(error);
@@ -48,7 +57,7 @@ module.exports = {
 
             let query = Excercise.find({ userId: id });
 
-            query.select({ _id: 0, userId: 0 });
+            query.select({ _id: 0, userId: 0, __v: 0 });
 
             if (req.query.from) {
                 let dateFrom = new Date(req.query.from).getTime();
@@ -60,21 +69,26 @@ module.exports = {
                 query.find({ date: { $lte: dateTo } });
             }
 
-            if (req.query.limit) query.sort({ date: 1 }).limit(Number(req.query.limit));
+            if (req.query.limit) {
+                let limit = Number(req.query.limit);
+              /* query.sort({ date: 1 }) */query.limit(limit);
+            }
 
             query.exec((err, data) => {
                 if (err) next({ message: "WTF" });
 
                 console.log(data)
+                let { _id, username } = user._doc;
                 return res.json({
-                    ...user._doc,
+                    _id,
+                    username,
                     count: data.length,
-                    log: data.map(log => {
+                    log: [...data.map(log => {
                         return {
                             ...log._doc,
                             date: log._doc.date.toDateString()
                         }
-                    })
+                    })]
                 })
             })
         })
